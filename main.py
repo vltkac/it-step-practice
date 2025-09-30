@@ -3,94 +3,74 @@ import pickle
 import os
 
 
-class Student:
-    def __init__(self, name: str, specialization: str):
-        if name.isalpha() and specialization:
-            self.name = name.capitalize().strip()
-            self.specialization = specialization.capitalize().strip()
-            self.grades = []
-            print('New student added.\n')
-        else:
-            raise ValueError('Please enter student\'s name with letters.')
+class MusicLibrary:
+    def __init__(self):
+        self.music_data = {}
+        print('Music library was initiated.\n')
 
-    def add_grade(self, grade: int):
-        if isinstance(grade, int):
-            self.grades.append(grade)
-            print('New grade was added.\n')
-        else:
-            raise ValueError('Please enter digit as a grade\'s value.')
+    def add_new_band(self, new_band_name: str):
+        if set(new_band_name) == set(' '):
+            raise ValueError('Band name can\'t contain only space symbols.')
 
-    def display_info(self):
-        avg_grade = sum(self.grades) / len(self.grades)
-        print(f'Name: {self.name}, specialization: {self.specialization}, average grade: {avg_grade:.1f}')
-
-    def save_json(self):
-        file_name = self._get_json_file_name()
-
-        json_data = {
-            'specialization': self.specialization,
-            'grades': self.grades
-        }
-
-        with open(file_name, 'w', encoding='utf-8') as f:
-            json.dump(json_data, f, indent=4, ensure_ascii=False)
-
-        print(f'Data saved to {file_name}')
-
-    def _get_json_file_name(self):
-        return f'student_data_{self.name}.json'
-
-    def load_from_json(self):
-        file_name = self._get_json_file_name()
-
-        if os.path.exists(file_name):
-            with open(file_name, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            print('No student was added to database.\n')
+        if new_band_name not in self.music_data.keys():
+            self.music_data[new_band_name] = []
+            print('New band was added.\n')
             return
 
-        self.specialization = data['specialization']
-        self.grades = data['grades']
+        raise ValueError(f'{new_band_name} was already added to the library.')
 
-        print('Student was upgraded.\n')
+    def add_new_album(self, existing_band_name: str, new_album_name: str):
+        if set(new_album_name) == set(' '):
+            raise ValueError('Album name can\'t contain only space symbols.')
 
+        if existing_band_name in self.music_data.keys():
+            if new_album_name not in self.music_data[existing_band_name]:
+                self.music_data[existing_band_name].append(new_album_name)
+                print(f'{new_album_name} was added to the band {existing_band_name}.\n')
+                return
+            raise ValueError(f'{new_album_name} is already in the band {existing_band_name}.')
+        raise ValueError(f'{existing_band_name} was not yet added to the library.')
 
-student = Student('Vlad', 'L4B')
-student.add_grade(5)
-student.add_grade(4)
-student.add_grade(2)
+    def save_music_data_to_json(self, json_file_name='data.json'):
+        if not json_file_name.endswith('.json'):
+            raise ValueError('File name must end with ".json".')
 
-student1 = Student('Liza', 'Cosmetology')
-student1.add_grade(5)
-student1.add_grade(4)
-student1.add_grade(4)
+        if not self.music_data:
+            raise ValueError('Your current library data is empty. File was not created.')
 
-student2 = Student('Ann', 'Economics')
-student2.add_grade(5)
-student2.add_grade(5)
-student2.add_grade(5)
+        with open(json_file_name, 'w', encoding='utf-8') as f:
+            json.dump(self.music_data, f, ensure_ascii=False, indent=4)
 
-students = [student, student1, student2]
+        print(f'{json_file_name} was created in your current working directory.\n')
 
-for student in students:
-    student.load_from_json()
-    student.display_info()
+    def load_data_from_json(self, json_file_name: str):
+        if json_file_name.endswith('.json') and os.path.exists(json_file_name):
+            with open(json_file_name, 'r', encoding='utf-8') as f:
+                data = json.load(f)
 
-student1.display_info()
-student2.display_info()
+            if isinstance(data, dict):
+                self.music_data = data
+                print(f'Data was loaded from {json_file_name} to your library.\n')
+                return
+            raise ValueError('Invalid format.')
+        raise FileNotFoundError('File not found.')
 
-with open('students.pkl', 'wb') as f:
-    pickle.dump(students, f)
+    def save_data_to_pickle(self, pickle_file_name='data.pkl'):
+        if pickle_file_name.endswith('.pkl'):
+            with open(pickle_file_name, 'wb') as f:
+                pickle.dump(self.music_data, f)
+                print(f'Data was saved to {pickle_file_name}.\n')
+                return
+        raise ValueError('File name must end with ".pkl".')
 
+    def load_data_from_pickle(self, pickle_file_name):
+        if pickle_file_name.endswith('.pkl') and os.path.exists(pickle_file_name):
+            with open(pickle_file_name, 'rb') as f:
+                data = pickle.load(f)
 
-with open('students.pkl', 'rb') as f:
-    data = pickle.load(f)
-
-
-for student in data:
-    student.display_info()
-
-
-with open('students.json', 'w', encoding='utf-8') as f:
-    json.dump(students, f, indent=4, ensure_ascii=False)
+                if isinstance(data, dict):
+                    self.music_data = data
+                    print(f'Data was loaded from {pickle_file_name} to your library.\n')
+                    return
+            raise ValueError('Invalid format.')
+        raise FileNotFoundError('File not found.')
