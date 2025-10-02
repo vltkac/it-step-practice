@@ -16,7 +16,7 @@ def get_nums(verbose=False):
 
         try:
             num = float(num)
-        except TypeError as err:
+        except ValueError as err:
             print(f'Enter a number or click Enter: {err}')
             continue
 
@@ -36,7 +36,7 @@ def get_average_value(nums_arg: list, verbose=False):
     average_value = sum(nums_arg) / len(nums_arg)
 
     if verbose:
-        print(f'Sum of the numbers from the list: {average_value}')
+        print(f'Average value of the numbers from the list: {average_value}')
 
     return average_value
 
