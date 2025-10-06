@@ -1,52 +1,127 @@
-import threading
+# from fastapi import FastAPI
+#
+#
+# app = FastAPI()
+#
+#
+# @app.post('/message')
+# def message():
+#     print('message function calling')
+#
+#
+# @app.post('/function')
+# def func():
+#     print('func function calling')
+#
+#
+# @app.post('/data')
+# def get_data():
+#     return {"result": "Hello from server"}
+#
+#
+# @app.post("/mult2/{num}")
+# def mult2(num: int):
+#     result = 2 * num
+#     return {'result': result}
 
 
-nums = []
+# from fastapi import FastAPI
+# from pydantic import BaseModel
+#
+#
+# app = FastAPI()
+#
+# @app.post("/hello/{name}")
+# def hello(name: str):
+#     return {"message": f"Hello, {name}!"}
+#
+#
+# class HelloName(BaseModel):
+#     name: str
+#
+#
+# @app.post("/hello_json")
+# def hello_json(hello_name: HelloName):
+#     name = hello_name.name
+#     return {"message": f"Hello, {name}!"}
+
+# Завдання 4
+# Напишіть сервер для симуляції роботи бібліотеки.
+# Дані про книги знаходяться у файлі books.json
+# Напишіть модель на pydentic для книги з такими
+# даними:
+# ● id
+# ● title
+# ● author
+# ● year
+# ● pages
+# Функціонал:
+# 1. Отримання всіх книг
+# ○ шлях – books
+# ○ метод – GET
+# 2. Отримання даних за ID книги
+# ○ шлях – books/{book_id}
+# ○ метод – GET
+# 3. Додавання нової книги
+# ○ шлях – books
+# ○ метод – POST
+# 4. Видалення книги за ID
+# ○ шлях – books/{book_id}
+# ○ метод – DELETE
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+import json
 
 
-def get_nums(verbose=False):
-    while True:
-        num = input('Please enter a number to append to the list. To stop appending click Enter: ').strip()
+class Book(BaseModel):
+    id: int
+    title: str
+    author: str
+    year: int
+    pages: int
 
-        if not num:
-            if verbose:
-                print(f'List of the numbers: {nums}')
+app = FastAPI()
 
-            return nums
+@app.get("/books")
+def get_all_books(filename='books.json'):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-        try:
-            num = float(num)
-        except ValueError as err:
-            print(f'Enter a number or click Enter: {err}')
-            continue
-
-        nums.append(num)
+    return data
 
 
-def get_total(nums_arg: list, verbose=False):
-    total = sum(nums_arg)
+@app.post("/books")
+def add_new(book_json: Book, filename='books.json'):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-    if verbose:
-        print(f'Sum of the numbers from the list: {total}')
+    data[book_json.id] = book_json
 
-    return total
-
-
-def get_average_value(nums_arg: list, verbose=False):
-    average_value = sum(nums_arg) / len(nums_arg)
-
-    if verbose:
-        print(f'Average value of the numbers from the list: {average_value}')
-
-    return average_value
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4)
 
 
-user_input_thread = threading.Thread(target=get_nums, args=(True, ))
-user_input_thread.start()
-user_input_thread.join()
 
-total_thread = threading.Thread(target=get_total, kwargs={'nums_arg': nums, 'verbose': True})
-total_thread.start()
 
-average_thread = threading.Thread(target=get_average_value, kwargs={'nums_arg': nums, 'verbose': True})
-average_thread.start()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
