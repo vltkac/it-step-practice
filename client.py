@@ -54,7 +54,7 @@ import requests
 
 
 while True:
-    user_choice = input('Choose option\nTo get all books press (1)\nTo add new book press (2)').strip()
+    user_choice = input('Choose option\nTo get all books press (1)\nTo add new book press (2) ').strip()
 
     if user_choice == '1':
         response = requests.get('http://localhost:8000/books')

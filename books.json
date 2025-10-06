@@ -1,2 +1,9 @@
 {
-    "1": 
+    "1": {
+        "id": 1,
+        "title": "harry potter",
+        "author": "jr",
+        "year": 2000,
+        "pages": 666
+    }
+}

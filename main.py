@@ -96,7 +96,7 @@ def add_new(book_json: Book, filename='books.json'):
     with open(filename, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    data[book_json.id] = book_json
+    data[book_json.id] = book_json.dict()
 
     with open(filename, 'w') as f:
         json.dump(data, f, indent=4)
