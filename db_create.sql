@@ -1,2 +1,0 @@
--- создание базы данных
-CREATE DATABASE FRUITS_AND_VEGETABLES
