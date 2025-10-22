@@ -1,0 +1,198 @@
+CREATE TABLE CURATORS(
+	ID SERIAL NOT NULL PRIMARY KEY,
+	NAME VARCHAR(100) NOT NULL,
+	SURNAME VARCHAR(100) NOT NULL
+);
+
+INSERT INTO CURATORS (NAME, SURNAME) VALUES
+('Anna', 'Kowalska'),
+('Piotr', 'Nowak'),
+('Katarzyna', 'Wiśniewska'),
+('Michał', 'Wójcik'),
+('Agnieszka', 'Kaczmarek'),
+('Tomasz', 'Mazur'),
+('Magdalena', 'Dąbrowska'),
+('Paweł', 'Lewandowski'),
+('Joanna', 'Zielińska'),
+('Krzysztof', 'Woźniak');
+
+ALTER TABLE DEPARTMENTS
+ADD COLUMN FACULTY_ID INT REFERENCES FACULTIES(FAC_ID);
+
+UPDATE DEPARTMENTS
+SET FACULTY_ID = FLOOR(RANDOM() * 7 + 1);
+
+ALTER TABLE DEPARTMENTS
+ALTER COLUMN FACULTY_ID SET NOT NULL;
+
+ALTER TABLE FACULTIES
+ADD COLUMN FINANCING DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK(FINANCING >= 0);
+
+UPDATE FACULTIES
+
+ALTER TABLE GROUPS
+ADD COLUMN DEPARTMENT_ID INT REFERENCES DEPARTMENTS(DEP_ID);
+
+UPDATE GROUPS
+SET DEPARTMENT_ID = FLOOR(RANDOM() * 10 + 1);
+
+ALTER TABLE GROUPS
+ALTER COLUMN DEPARTMENT_ID SET NOT NULL;
+
+CREATE TABLE GROUPS_CURATORS(
+	ID SERIAL NOT NULL PRIMARY KEY,
+	CURATOR_ID INT NOT NULL REFERENCES CURATORS(ID),
+	GROUP_ID INT NOT NULL REFERENCES GROUPS(GROUP_ID)
+);
+
+INSERT INTO GROUPS_CURATORS (CURATOR_ID, GROUP_ID)
+VALUES
+	(1, 2),
+	(2, 3),
+	(3, 4),
+	(5, 6),
+	(7, 8),
+	(9, 10),
+	(2, 1),
+	(3, 2),
+	(4, 3),
+	(6, 5);
+
+CREATE TABLE SUBJECTS(
+	ID SERIAL NOT NULL PRIMARY KEY,
+	NAME VARCHAR(100) NOT NULL CHECK(NAME != '')
+);
+
+INSERT INTO SUBJECTS (NAME) VALUES
+('Matematyka'),
+('Fizyka'),
+('Chemia'),
+('Biologia'),
+('Informatyka'),
+('Ekonomia'),
+('Prawo'),
+('Psychologia'),
+('Filozofia'),
+('Historia'),
+('Socjologia'),
+('Zarządzanie'),
+('Marketing'),
+('Statystyka'),
+('Język angielski'),
+('Język niemiecki'),
+('Język polski'),
+('Geografia'),
+('Finanse'),
+('Logistyka');
+
+CREATE TABLE LECTURES(
+	ID SERIAL NOT NULL PRIMARY KEY,
+	LECTURE_ROOM VARCHAR(100) NOT NULL CHECK(LECTURE_ROOM != ''),
+	SUBJECT_ID INT NOT NULL REFERENCES SUBJECTS(ID),
+	TEACHER_ID INT NOT NULL REFERENCES TEACHERS(TEACH_ID)
+);
+
+INSERT INTO LECTURES (LECTURE_ROOM, SUBJECT_ID, TEACHER_ID) VALUES
+('A101', 1, 1),
+('A102', 2, 2),
+('A103', 3, 3),
+('A104', 4, 4),
+('A105', 5, 5),
+('A106', 6, 6),
+('A107', 7, 7),
+('A108', 8, 8),
+('A109', 9, 9),
+('A110', 10, 10),
+('B201', 11, 11),
+('B202', 12, 12),
+('B203', 13, 13),
+('B204', 14, 14),
+('B205', 15, 15),
+('B206', 16, 16),
+('B207', 17, 17),
+('B208', 18, 18),
+('B209', 19, 19),
+('B210', 20, 20),
+('C301', 1, 21),
+('C302', 2, 22),
+('C303', 3, 23),
+('C304', 4, 24),
+('C305', 5, 25),
+('C306', 6, 26),
+('C307', 7, 27),
+('C308', 8, 28),
+('C309', 9, 29),
+('C310', 10, 30);
+
+CREATE TABLE GROUPS_LECTURES(
+	ID SERIAL NOT NULL PRIMARY KEY,
+	GROUP_ID INT NOT NULL REFERENCES GROUPS(GROUP_ID),
+	LECTURE_ID INT NOT NULL REFERENCES LECTURES(ID)
+);
+
+INSERT INTO GROUPS_LECTURES (GROUP_ID, LECTURE_ID) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(2, 2),
+(2, 4),
+(2, 5),
+(3, 1),
+(3, 6),
+(3, 7),
+(4, 3),
+(4, 8),
+(4, 9),
+(5, 5),
+(5, 10),
+(5, 11),
+(6, 7),
+(6, 12),
+(6, 13),
+(7, 9),
+(7, 14),
+(7, 15),
+(8, 10),
+(8, 16),
+(8, 17),
+(9, 12),
+(9, 18),
+(9, 19),
+(10, 13),
+(10, 19),
+(10, 20);
+
+-- Виведіть прізвища кураторів груп і назви груп, які вони курирують. 
+SELECT C.SURNAME, G.GROUP_NAME
+FROM GROUPS_CURATORS GC
+	JOIN CURATORS C ON C.ID = GC.CURATOR_ID
+	JOIN GROUPS G ON G.GROUP_ID = GC.GROUP_ID;
+
+-- Виведіть імена та прізвища викладачів, які читають лекції у групі «CS-202».
+SELECT T.TEACH_NAME, T.TEACH_SURNAME
+FROM TEACHERS T
+	JOIN LECTURES L ON L.TEACHER_ID = T.TEACH_ID
+	JOIN GROUPS_LECTURES GL ON GL.LECTURE_ID = L.ID
+	JOIN GROUPS G ON GL.GROUP_ID = G.GROUP_ID
+WHERE G.GROUP_NAME = 'CS-202';
+
+-- Виведіть назви кафедр і назви груп, які до них належать.
+SELECT D.DEP_NAME AS DEPARTMENT, STRING_AGG(G.GROUP_NAME, ', ') AS GROUPS
+FROM GROUPS G
+	JOIN DEPARTMENTS D ON G.DEPARTMENT_ID = D.DEP_ID
+GROUP BY D.DEP_NAME;
+
+-- Виведіть назви предметів, які викладає викладач «Anna Kowalska».
+SELECT S.NAME AS 'SUBJECTS CONDUCTED BY ANNA KOWALSKA'
+FROM SUBJECTS S
+	JOIN LECTURES L ON L.SUBJECT_ID = S.ID
+	JOIN TEACHERS T ON T.TEACH_ID = L.ID
+WHERE T.TEACH_NAME = 'Anna' AND T.TEACH_SURNAME = 'Kowalska';
+
+-- Виведіть назви груп 5-го курсу, а також назви факультетів, до яких вони належать.
+
+SELECT G.GROUP_NAME, F.FAC_NAME
+FROM GROUPS G
+	JOIN DEPARTMENTS D ON D.DEP_ID = G.DEPARTMENT_ID
+	JOIN FACULTIES F ON F.FAC_ID = D.FACULTY_ID
+WHERE G.GROUP_YEAR = 5;
