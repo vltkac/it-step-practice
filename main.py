@@ -1,96 +1,110 @@
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 import json
-import pickle
-import os
 
 
-class Student:
-    def __init__(self, name: str, specialization: str):
-        if name.isalpha() and specialization:
-            self.name = name.capitalize().strip()
-            self.specialization = specialization.capitalize().strip()
-            self.grades = []
-            print('New student added.\n')
-        else:
-            raise ValueError('Please enter student\'s name with letters.')
+try:
+    with open('credentials.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        login = data.get('login')
+        password = str(data.get('password'))
+except FileNotFoundError:
+    print("Credentials file not found.")
+    exit(1)
+except json.JSONDecodeError:
+    print("Error decoding JSON from the credentials file.")
+    exit(1)
 
-    def add_grade(self, grade: int):
-        if isinstance(grade, int):
-            self.grades.append(grade)
-            print('New grade was added.\n')
-        else:
-            raise ValueError('Please enter digit as a grade\'s value.')
+DATABASE_URL = f"postgresql+psycopg2://{login}:{password.replace('%', '%25').replace('(', '%28').replace(')', '%29')}@localhost:5432/academy"
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+session = Session()
 
-    def display_info(self):
-        avg_grade = sum(self.grades) / len(self.grades)
-        print(f'Name: {self.name}, specialization: {self.specialization}, average grade: {avg_grade:.1f}')
+# ▷ вивести інформацію про всі навчальні групи
+def display_groups():
+    result = session.execute(text("SELECT * FROM groups"))
 
-    def save_json(self):
-        file_name = self._get_json_file_name()
+    for column in result.keys():
+        print(f'{column:<15}', end=' ')
+    print()
 
-        json_data = {
-            'specialization': self.specialization,
-            'grades': self.grades
-        }
-
-        with open(file_name, 'w', encoding='utf-8') as f:
-            json.dump(json_data, f, indent=4, ensure_ascii=False)
-
-        print(f'Data saved to {file_name}')
-
-    def _get_json_file_name(self):
-        return f'student_data_{self.name}.json'
-
-    def load_from_json(self):
-        file_name = self._get_json_file_name()
-
-        if os.path.exists(file_name):
-            with open(file_name, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            print('No student was added to database.\n')
-            return
-
-        self.specialization = data['specialization']
-        self.grades = data['grades']
-
-        print('Student was upgraded.\n')
+    for row in result:
+        for item in row:
+            print(f'{item:<15}', end=' ')
+        print()
 
 
-student = Student('Vlad', 'L4B')
-student.add_grade(5)
-student.add_grade(4)
-student.add_grade(2)
+# ▷ вивести інформацію про конкретного викладача
+def display_teacher(teacher_surname):
+    teachers = session.execute(text("SELECT teach_surname FROM teachers")).fetchall()
+    if lower(teacher_surname) not in [lower(teach.teach_surname) for teach in teachers]:
+        print('Teacher not found')
+        return
 
-student1 = Student('Liza', 'Cosmetology')
-student1.add_grade(5)
-student1.add_grade(4)
-student1.add_grade(4)
+    result = session.execute(
+        text(f"SELECT * FROM teachers WHERE teach_surname = '{teacher_surname}'")
+    )
 
-student2 = Student('Ann', 'Economics')
-student2.add_grade(5)
-student2.add_grade(5)
-student2.add_grade(5)
+    for column in result.keys():
+        print(f'{column:<22}', end=' ')
+    print()
 
-students = [student, student1, student2]
-
-for student in students:
-    student.load_from_json()
-    student.display_info()
-
-student1.display_info()
-student2.display_info()
-
-with open('students.pkl', 'wb') as f:
-    pickle.dump(students, f)
+    for row in result:
+        for item in row:
+            print(f'{str(item):<22}', end=' ')
+        print()
 
 
-with open('students.pkl', 'rb') as f:
-    data = pickle.load(f)
+# ▷ вивести назви груп, що належать до конкретного факультету
+def display_groups_of_faculty(faculty_name):
+    try:
+        faculties = session.execute(text("SELECT fac_name FROM faculties")).fetchall()
+        if lower(faculty_name) not in [lower(fac.fac_name) for fac in faculties]:
+            raise ValueError('Faculty not found')
+    except ValueError as err:
+        print(err)
+        return
+
+    result = session.execute(
+        text(f"""
+            SELECT g.group_name 
+            FROM groups g
+            JOIN departments d ON d.dep_id = g.department_id
+            JOIN faculties f ON f.fac_id = d.faculty_id
+            WHERE f.fac_name = '{faculty_name}'
+        """)
+    )
+
+    print(f"Groups of the {faculty_name}:")
+    for row in result:
+        print(row.group_name)
 
 
-for student in data:
-    student.display_info()
+# ▷ вивести назви предметів, які викладає конкретний викладач
+def display_subjects_of_teacher(teacher_name_surname):
+    try:
+        name = teacher_name_surname.split()[0].capitalize()
+        surname = teacher_name_surname.split()[1].capitalize()
+    except IndexError:
+        print('Please provide both name and surname of the teacher. Example: "Anna Kowalska"')
+        return
 
+    teachers = session.execute(text("SELECT teach_name, teach_surname FROM teachers")).fetchall()
+    if (lower(name), lower(surname)) not in [(lower(teach.teach_name), lower(teach.teach_surname)) for teach in teachers]:
+        print('Teacher not found')
+        return
 
-with open('students.json', 'w', encoding='utf-8') as f:
-    json.dump(students, f, indent=4, ensure_ascii=False)
+    result = session.execute(
+        text(f"""
+            SELECT s.name 
+            FROM subjects s
+            JOIN lectures l ON l.subject_id = s.id
+            JOIN teachers t ON t.teach_id = l.teacher_id
+            WHERE t.teach_name = '{name}'
+                AND t.teach_surname = '{surname}'            
+        """)
+    )
+
+    print(f"Subjects taught by {name} {surname}:")
+    for row in result:
+        print(row.name)
